@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 
+export const dynamic = 'force-dynamic';
+
 // GET - Get team passwords (ADMIN only) - Returns placeholder since passwords are hashed
 export async function GET(req: NextRequest) {
   try {

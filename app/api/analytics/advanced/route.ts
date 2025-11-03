@@ -8,6 +8,8 @@ import {
   getChannelEffectiveness,
 } from "@/lib/advanced-analytics";
 
+export const dynamic = 'force-dynamic';
+
 /**
  * GET /api/analytics/advanced - Get advanced analytics metrics
  * Query params:
