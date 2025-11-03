@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "tsx watch server.ts",
     "build": "next build",
-    "start": "NODE_ENV=production tsx server.ts",
+    "start": "next start",
+    "start:custom": "NODE_ENV=production tsx server.ts",
     "lint": "next lint",
     "format": "prettier --write .",
     "prisma:generate": "prisma generate",

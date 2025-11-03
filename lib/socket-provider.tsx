@@ -20,6 +20,15 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
   const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
+    // Disable Socket.io on Vercel (serverless doesn't support WebSockets)
+    const isVercel = process.env.NEXT_PUBLIC_VERCEL === '1' || 
+                     typeof window !== 'undefined' && window.location.hostname.includes('vercel.app');
+    
+    if (isVercel) {
+      console.log('Socket.io disabled in serverless environment. Using polling fallback.');
+      return;
+    }
+
     const socketInstance = io({
       path: "/api/socket",
       reconnection: true,

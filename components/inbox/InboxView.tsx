@@ -57,6 +57,7 @@ export function InboxView() {
       if (!res.ok) throw new Error("Failed to fetch contacts");
       return res.json();
     },
+    refetchInterval: 10000, // Poll every 10 seconds for new contacts
   });
 
   let contacts = contactsData?.contacts || [];
