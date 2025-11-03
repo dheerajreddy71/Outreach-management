@@ -2,6 +2,9 @@ import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 
+// This page uses dynamic features (session/auth)
+export const dynamic = 'force-dynamic';
+
 export default async function Home() {
   const session = await getSession();
 
