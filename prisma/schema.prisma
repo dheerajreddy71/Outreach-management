@@ -1,0 +1,428 @@
+// This is your Prisma schema file
+// Learn more: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// USER & AUTHENTICATION
+// ============================================
+
+enum UserRole {
+  GUEST
+  VIEWER
+  EDITOR
+  ADMIN
+}
+
+model User {
+  id            String         @id @default(cuid())
+  email         String         @unique
+  name          String?
+  password      String?
+  role          UserRole       @default(GUEST)
+  image         String?
+  emailVerified Boolean        @default(false)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  
+  // Relations
+  sessions      Session[]
+  accounts      Account[]
+  messages      Message[]
+  notes         Note[]
+  assignments   ContactAssignment[]
+  teamMembers   TeamMember[]
+  sentScheduled ScheduledMessage[]
+  invitations   Invitation[]
+  
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+  
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+// ============================================
+// TEAM MANAGEMENT
+// ============================================
+
+model Team {
+  id               String       @id @default(cuid())
+  name             String
+  slug             String       @unique // Unique team ID for joining
+  description      String?
+  passwordAdmin    String?      // Admin password (bcrypt hashed)
+  passwordEditor   String?      // Editor password (bcrypt hashed)
+  passwordViewer   String?      // Viewer password (bcrypt hashed)
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  
+  members     TeamMember[]
+  invitations Invitation[]
+  contacts    Contact[]    // Team-owned contacts
+  
+  @@map("teams")
+}
+
+model TeamMember {
+  id        String   @id @default(cuid())
+  userId    String
+  teamId    String
+  role      UserRole @default(VIEWER)
+  joinedAt  DateTime @default(now())
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, teamId])
+  @@map("team_members")
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
+  CANCELLED
+}
+
+model Invitation {
+  id         String           @id @default(cuid())
+  email      String
+  role       UserRole         @default(VIEWER)
+  token      String           @unique
+  status     InvitationStatus @default(PENDING)
+  teamId     String?
+  inviterId  String
+  expiresAt  DateTime?
+  acceptedAt DateTime?
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+  
+  inviter User  @relation(fields: [inviterId], references: [id], onDelete: Cascade)
+  team    Team? @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  
+  @@index([email])
+  @@index([token])
+  @@map("invitations")
+}
+
+// ============================================
+// CONTACT MANAGEMENT
+// ============================================
+
+enum ContactStatus {
+  LEAD
+  ACTIVE
+  INACTIVE
+  BLOCKED
+  UNSUBSCRIBED
+}
+
+model Contact {
+  id              String        @id @default(cuid())
+  firstName       String?
+  lastName        String?
+  email           String?
+  phone           String?
+  whatsapp        String?
+  twitterHandle   String?
+  facebookId      String?
+  company         String?
+  jobTitle        String?
+  status          ContactStatus @default(ACTIVE)
+  tags            String[]
+  customFields    Json?
+  lastContactedAt DateTime?
+  teamId          String?       // Contacts belong to teams
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  
+  // Relations
+  messages    Message[]
+  notes       Note[]
+  assignments ContactAssignment[]
+  scheduled   ScheduledMessage[]
+  team        Team?     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  
+  @@unique([email, teamId])  // Email unique per team
+  @@unique([phone, teamId])  // Phone unique per team
+  @@index([email])
+  @@index([phone])
+  @@index([status])
+  @@index([teamId])
+  @@map("contacts")
+}
+
+model ContactAssignment {
+  id         String   @id @default(cuid())
+  contactId  String
+  userId     String
+  assignedAt DateTime @default(now())
+  
+  contact Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([contactId, userId])
+  @@map("contact_assignments")
+}
+
+// ============================================
+// MESSAGING
+// ============================================
+
+enum MessageChannel {
+  SMS
+  WHATSAPP
+  EMAIL
+  TWITTER
+  FACEBOOK
+  VOICE
+}
+
+enum MessageDirection {
+  INBOUND
+  OUTBOUND
+}
+
+enum MessageStatus {
+  PENDING
+  SENT
+  DELIVERED
+  READ
+  FAILED
+  QUEUED
+}
+
+model Message {
+  id             String           @id @default(cuid())
+  contactId      String
+  userId         String?
+  channel        MessageChannel
+  direction      MessageDirection
+  status         MessageStatus    @default(PENDING)
+  content        String           @db.Text
+  metadata       Json?
+  externalId     String?          @unique
+  threadId       String?
+  attachments    String[]
+  errorMessage   String?
+  sentAt         DateTime?
+  deliveredAt    DateTime?
+  readAt         DateTime?
+  retryCount     Int              @default(0)
+  failureReason  String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  
+  contact Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  user    User?   @relation(fields: [userId], references: [id])
+  
+  @@index([contactId])
+  @@index([channel])
+  @@index([status])
+  @@index([createdAt])
+  @@index([threadId])
+  @@map("messages")
+}
+
+// ============================================
+// SCHEDULED MESSAGES & AUTOMATION
+// ============================================
+
+enum ScheduleStatus {
+  PENDING
+  SENT
+  FAILED
+  CANCELLED
+}
+
+model ScheduledMessage {
+  id          String         @id @default(cuid())
+  contactId   String
+  userId      String
+  channel     MessageChannel
+  content     String         @db.Text
+  scheduledAt DateTime
+  status      ScheduleStatus @default(PENDING)
+  sentAt      DateTime?
+  templateId  String?
+  metadata    Json?
+  errorMessage String?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  
+  contact  Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id])
+  template MessageTemplate? @relation(fields: [templateId], references: [id])
+  
+  @@index([scheduledAt])
+  @@index([status])
+  @@map("scheduled_messages")
+}
+
+model MessageTemplate {
+  id          String    @id @default(cuid())
+  name        String
+  channel     MessageChannel
+  content     String    @db.Text
+  variables   String[]
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  scheduled ScheduledMessage[]
+  
+  @@map("message_templates")
+}
+
+// ============================================
+// NOTES & COLLABORATION
+// ============================================
+
+enum NoteVisibility {
+  PUBLIC
+  PRIVATE
+  TEAM
+}
+
+model Note {
+  id         String         @id @default(cuid())
+  contactId  String
+  userId     String
+  content    String         @db.Text
+  visibility NoteVisibility @default(PUBLIC)
+  mentions   String[]
+  parentId   String?
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+  
+  contact Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id])
+  parent  Note?   @relation("NoteReplies", fields: [parentId], references: [id])
+  replies Note[]  @relation("NoteReplies")
+  
+  @@index([contactId])
+  @@index([userId])
+  @@map("notes")
+}
+
+// ============================================
+// TWILIO INTEGRATION
+// ============================================
+
+model TwilioNumber {
+  id          String   @id @default(cuid())
+  phoneNumber String   @unique
+  friendlyName String?
+  capabilities Json?
+  isActive    Boolean  @default(true)
+  isTrial     Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@map("twilio_numbers")
+}
+
+// ============================================
+// NOTIFICATIONS
+// ============================================
+
+enum NotificationType {
+  MENTION
+  MESSAGE
+  NOTE
+  ASSIGNMENT
+  SYSTEM
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType
+  title     String
+  message   String           @db.Text
+  link      String?
+  isRead    Boolean          @default(false)
+  metadata  Json?
+  createdAt DateTime         @default(now())
+  readAt    DateTime?
+  
+  @@index([userId])
+  @@index([isRead])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+// ============================================
+// ANALYTICS & METRICS
+// ============================================
+
+model Analytics {
+  id              String         @id @default(cuid())
+  contactId       String?
+  channel         MessageChannel
+  eventType       String
+  eventData       Json?
+  timestamp       DateTime       @default(now())
+  
+  @@index([channel])
+  @@index([eventType])
+  @@index([timestamp])
+  @@map("analytics")
+}
+
+model ConversationMetrics {
+  id               String   @id @default(cuid())
+  contactId        String
+  totalMessages    Int      @default(0)
+  responseTime     Int?
+  lastMessageAt    DateTime?
+  firstResponseAt  DateTime?
+  conversationStart DateTime @default(now())
+  conversationEnd  DateTime?
+  
+  @@index([contactId])
+  @@map("conversation_metrics")
+}
