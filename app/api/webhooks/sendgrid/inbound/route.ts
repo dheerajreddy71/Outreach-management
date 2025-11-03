@@ -30,8 +30,8 @@ export async function POST(req: Request) {
     const senderEmailMatch = from.match(/<(.+?)>/);
     const senderEmail = senderEmailMatch ? senderEmailMatch[1] : from;
 
-    // Find or create contact
-    let contact = await prisma.contact.findUnique({
+    // Find or create contact (using findFirst since email is unique per team)
+    let contact = await prisma.contact.findFirst({
       where: { email: senderEmail },
     });
 
