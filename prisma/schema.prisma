@@ -3,11 +3,15 @@
 
 generator client {
   provider = "prisma-client-js"
+  previewFeatures = ["fullTextSearch"]
 }
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  // directUrl is used for migrations, while url is used for queries
+  // This helps with connection pooling in production
+  directUrl = env("DIRECT_URL")
 }
 
 // ============================================
