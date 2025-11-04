@@ -2,7 +2,8 @@ import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 
-const secretKey = process.env.SESSION_SECRET || "your-secret-key-change-in-production";
+// Use AUTH_SECRET (same as Better Auth) for session encryption
+const secretKey = process.env.AUTH_SECRET || process.env.SESSION_SECRET || "your-secret-key-change-in-production";
 const key = new TextEncoder().encode(secretKey);
 const SESSION_DURATION = 60 * 60 * 24 * 7; // 7 days in seconds
 
