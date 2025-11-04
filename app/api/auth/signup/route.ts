@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { createSession } from "@/lib/session";
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: Request) {
   try {
     const { name, email, password } = await req.json();
@@ -56,8 +58,16 @@ export async function POST(req: Request) {
     });
   } catch (error) {
     console.error("Sign up error:", error);
+    console.error("Error details:", {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      env: {
+        hasAuthSecret: !!process.env.AUTH_SECRET,
+        hasDatabaseUrl: !!process.env.DATABASE_URL,
+      }
+    });
     return NextResponse.json(
-      { error: "An error occurred during sign up" },
+      { error: "An error occurred during sign up", details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
   }
