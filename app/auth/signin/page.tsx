@@ -32,8 +32,8 @@ export default function SignInPage() {
         return;
       }
 
-      // Successfully signed in
-      router.push("/inbox");
+      // Successfully signed in - use redirectTo from API response
+      router.push(data.redirectTo || "/inbox");
       router.refresh();
     } catch (err) {
       setError("An error occurred. Please try again.");

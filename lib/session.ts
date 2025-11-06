@@ -5,7 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
 // Use AUTH_SECRET (same as Better Auth) for session encryption
 const secretKey = process.env.AUTH_SECRET || process.env.SESSION_SECRET || "your-secret-key-change-in-production";
 const key = new TextEncoder().encode(secretKey);
-const SESSION_DURATION = 60 * 60 * 24 * 7; // 7 days in seconds
+const SESSION_DURATION = 60 * 60 * 24 * 30; // 30 days in seconds (increased for mobile app persistence)
 
 export interface SessionData {
   userId: string;
@@ -17,7 +17,7 @@ export async function encrypt(payload: SessionData): Promise<string> {
   return await new SignJWT(payload as any)
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
-    .setExpirationTime("7d")
+    .setExpirationTime("30d") // Updated to 30 days
     .sign(key);
 }
 
@@ -43,10 +43,12 @@ export async function createSession(userId: string, email: string) {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     expires: expiresAt,
+    maxAge: SESSION_DURATION, // Explicitly set maxAge for better persistence
     sameSite: "lax",
     path: "/",
   });
 
+  console.log("[Session] Session created with 30-day expiration:", expiresAt);
   return token;
 }
 
@@ -107,9 +109,11 @@ export async function updateSession(request: NextRequest) {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     expires: expiresAt,
+    maxAge: SESSION_DURATION, // Explicitly set maxAge for persistence
     sameSite: "lax",
     path: "/",
   });
 
+  console.log("[Session] Session refreshed with 30-day expiration");
   return response;
 }

@@ -52,9 +52,13 @@ export async function POST(req: Request) {
     // Create session for the new user
     await createSession(user.id, user.email);
 
+    // New users (GUEST) without teams should go to onboarding
+    const redirectTo = user.role === "GUEST" ? "/onboarding" : "/inbox";
+
     return NextResponse.json({
       success: true,
       user: { id: user.id, email: user.email, name: user.name, role: user.role },
+      redirectTo,
     });
   } catch (error) {
     console.error("Sign up error:", error);

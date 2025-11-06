@@ -41,6 +41,22 @@ export async function POST(req: Request) {
 
     console.log("[Signin] Session created for user:", user.email);
 
+    // Check if user has team memberships
+    const userWithTeam = await prisma.user.findUnique({
+      where: { id: user.id },
+      select: {
+        teamMembers: {
+          include: {
+            team: true,
+          },
+        },
+      },
+    });
+
+    // Determine redirect based on role and team membership
+    const hasTeam = userWithTeam?.teamMembers && userWithTeam.teamMembers.length > 0;
+    const redirectTo = user.role === "GUEST" && !hasTeam ? "/onboarding" : "/inbox";
+
     return NextResponse.json({ 
       success: true, 
       user: { 
@@ -48,7 +64,8 @@ export async function POST(req: Request) {
         email: user.email, 
         name: user.name,
         role: user.role
-      } 
+      },
+      redirectTo 
     });
   } catch (error) {
     console.error("Sign in error:", error);

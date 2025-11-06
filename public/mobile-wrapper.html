@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Outreach Management</title>
+  
+  <!-- iOS meta tags -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Outreach">
+  
+  <!-- Android meta tags -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#ffffff">
+  
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      overflow: hidden;
+      background: #ffffff;
+    }
+    
+    #splash {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+      transition: opacity 0.3s ease-out;
+    }
+    
+    #splash.hide {
+      opacity: 0;
+      pointer-events: none;
+    }
+    
+    .splash-logo {
+      width: 120px;
+      height: 120px;
+      background: white;
+      border-radius: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 48px;
+      font-weight: bold;
+      color: #667eea;
+      margin-bottom: 24px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+    }
+    
+    .splash-text {
+      color: white;
+      font-size: 24px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    
+    .splash-subtitle {
+      color: rgba(255,255,255,0.8);
+      font-size: 14px;
+    }
+    
+    .spinner {
+      margin-top: 32px;
+      width: 40px;
+      height: 40px;
+      border: 4px solid rgba(255,255,255,0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    #app-frame {
+      width: 100%;
+      height: 100vh;
+      border: none;
+      display: none;
+    }
+    
+    #app-frame.show {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <!-- Splash Screen -->
+  <div id="splash">
+    <div class="splash-logo">📱</div>
+    <div class="splash-text">Outreach Management</div>
+    <div class="splash-subtitle">Multi-Channel Customer Engagement</div>
+    <div class="spinner"></div>
+  </div>
+  
+  <!-- Main App Frame -->
+  <iframe id="app-frame" src="index.html"></iframe>
+  
+  <script>
+    // Wait for app to load
+    const appFrame = document.getElementById('app-frame');
+    const splash = document.getElementById('splash');
+    
+    appFrame.onload = function() {
+      setTimeout(() => {
+        splash.classList.add('hide');
+        appFrame.classList.add('show');
+        setTimeout(() => {
+          splash.remove();
+        }, 300);
+      }, 1500);
+    };
+    
+    // Handle mobile app events
+    window.addEventListener('message', function(event) {
+      // Handle messages from the iframe if needed
+      console.log('Message from app:', event.data);
+    });
+  </script>
+</body>
+</html>

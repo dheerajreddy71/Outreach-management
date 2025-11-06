@@ -62,6 +62,23 @@ export function Navigation() {
       });
       
       if (res.ok) {
+        // Best-effort client-side cleanup: expire cookie and clear storages.
+        // This complements the server-side Set-Cookie expiration and helps
+        // in environments (mobile WebView / older browsers) where the cookie
+        // may not be removed immediately.
+        try {
+          // Expire the session cookie in the browser
+          document.cookie = "session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+        } catch (e) {
+          // ignore - may fail in SSR or constrained environments
+        }
+        try {
+          localStorage.clear();
+          sessionStorage.clear();
+        } catch (e) {
+          // ignore storage access errors (e.g., in private modes)
+        }
+
         router.push("/auth/signin");
         router.refresh();
       }

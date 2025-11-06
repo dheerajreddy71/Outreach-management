@@ -55,8 +55,8 @@ export default function SignUpPage() {
         return;
       }
 
-      // Successfully signed up and signed in
-      router.push("/inbox");
+      // Successfully signed up and signed in - use redirectTo from API response
+      router.push(data.redirectTo || "/onboarding");
       router.refresh();
     } catch (err) {
       setError("An error occurred. Please try again.");
